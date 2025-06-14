@@ -17,7 +17,7 @@ describe("Factory", function () {
 
     //get token
     const tokenAddress = await factory.tokens(0)
-    const token = ethers.getContractAt("Token", tokenAddress)
+    const token = await ethers.getContractAt("Token", tokenAddress)
     return { factory, deployer, creator, token }; // ✅ Wrap it in an object
   }
 
@@ -37,6 +37,17 @@ describe("Factory", function () {
      it("should set the owner", async function () {
       const { factory, token } = await loadFixture(deployFactoryFixture);
       expect(await token.owner()).to.equal(await factory.getAddress());
+    });
+
+       it("should set the creator", async function () {
+      const { creator, token } = await loadFixture(deployFactoryFixture);
+      expect(await token.creator()).to.equal(creator.address);
+    });
+
+       it("should set the supply", async function () {
+      const { factory, token } = await loadFixture(deployFactoryFixture);
+      const totalSupply = ethers.parseUnits("1000000", 18)
+      expect(await token.balanceOf(await factory.getAddress())).to.equal(totalSupply);
     });
   })
 

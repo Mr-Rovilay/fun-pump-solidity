@@ -8,7 +8,7 @@ describe("Factory", function () {
   const FEE = ethers.parseUnits("0.01", 18);
   
   async function deployFactoryFixture() {
-    const [deployer, creator] = await ethers.getSigners()
+    const [deployer, creator, buyer] = await ethers.getSigners()
     const Factory = await ethers.getContractFactory("Factory");
     const factory = await Factory.deploy(FEE);
 
@@ -18,7 +18,20 @@ describe("Factory", function () {
     //get token
     const tokenAddress = await factory.tokens(0)
     const token = await ethers.getContractAt("Token", tokenAddress)
-    return { factory, deployer, creator, token }; // ✅ Wrap it in an object
+    return { factory, deployer, creator, token, buyer }; // ✅ Wrap it in an object
+  }
+
+  async function buyTokenFixture() {
+    const {factory, token, creator, buyer} = await deployFactoryFixture()
+
+    const AMOUNT = ethers.parseUnits("10000", 18)
+    const COST = ethers.parseUnits("1", 18)
+
+    const transaction = await factory.connect(buyer).buy(await token.getAddress(), AMOUNT, {value: COST})
+    await transaction.wait()
+
+     return { factory, token, creator, buyer };
+
   }
 
   describe("Deployment", function () {
@@ -68,6 +81,23 @@ describe("Factory", function () {
             expect(sale.raised).to.equal(0)
               expect(sale.isOpen).to.equal(true)
     });
+  })
+
+  describe("Buying", function () {
+     const AMOUNT = ethers.parseUnits("10000", 18)
+    const COST = ethers.parseUnits("1", 18)
+
+    it("Should update ETH balance", async function (){
+      const {factory} = await loadFixture(buyTokenFixture)
+      const balance = await ethers.provider.getBalance(await factory.getAddress())
+      expect(balance).to.equal(FEE + COST) 
+    })
+
+     it("Should update token balance", async function (){
+         const {token, buyer} = await loadFixture(buyTokenFixture)
+         const balance  = await token.balanceOf(buyer.address)
+         expect(balance).to.equal(AMOUNT)
+     })
   })
 
   

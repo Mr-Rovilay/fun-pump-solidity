@@ -20,6 +20,9 @@ contract Factory {
         bool isOpen;
     }
 
+    event Created(address indexed token);
+    event Buy(address indexed token, uint256 amount);
+
     constructor(uint256 _fee) {
         fee = _fee;
         owner = msg.sender;
@@ -35,7 +38,7 @@ contract Factory {
         string memory _name,
         string memory _symbol
     ) external payable {
-        //Create a new token
+        require(msg.value >= fee);        //Create a new token
         Token token = new Token(msg.sender, _name, _symbol, 1_000_000 ether);
 
         tokens.push(address(token));
@@ -52,5 +55,17 @@ contract Factory {
         );
 
         tokenToSale[address(token)] = sale;
+
+        emit Created(address(token));
+    }
+
+    function buy(address _token, uint256 _amount) external payable {
+
+        TokenSale storage sale = tokenToSale[_token];
+
+        sale.sold = sale.sold + _amount;
+        Token(_token).transfer(msg.sender, _amount);
+
+        emit Buy(_token, _amount);
     }
 }

@@ -64,20 +64,20 @@ contract Factory {
         TokenSale storage sale = tokenToSale[_token];
 
         uint256 cost = getCost(sale.sold);
-        require(sale.isOpen, "Sale is not open");
+        // require(sale.isOpen, "Sale is not open");
 
         uint256 price = cost * (_amount / 10 ** 18);
-        require(msg.value >= price, "Not enough ether sent");
-        require(Token(_token).balanceOf(address(this)) >= _amount, "Not enough tokens in sale");
+        // require(msg.value >= price, "Not enough ether sent");
+        // require(Token(_token).balanceOf(address(this)) >= _amount, "Not enough tokens in sale");
 
         sale.sold = sale.sold + _amount;
         sale.raised = sale.raised + price;
-        if (msg.value > price) {
-            payable(msg.sender).transfer(msg.value - price); // Refund excess ether
-        }
-        if (sale.sold >= 1_000_000 ether) {
-            sale.isOpen = false; // Close the sale if all tokens are sold
-        }
+        // if (msg.value > price) {
+        //     payable(msg.sender).transfer(msg.value - price); // Refund excess ether
+        // }
+        // if (sale.sold >= 1_000_000 ether) {
+        //     sale.isOpen = false; // Close the sale if all tokens are sold
+        // }
         // Transfer the fee to the owner
         Token(_token).transfer(msg.sender, _amount);
 

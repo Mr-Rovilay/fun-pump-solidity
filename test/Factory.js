@@ -98,6 +98,15 @@ describe("Factory", function () {
          const balance  = await token.balanceOf(buyer.address)
          expect(balance).to.equal(AMOUNT)
      })
+
+     it("Should update token sale", async function (){
+      const {factory, token} = await loadFixture(buyTokenFixture)
+      const sale = await factory.tokenSToSale(await token.getAddress())
+
+      expect(sale.token).to.equal(await token.getAddress())
+      expect(sale.sold).to.equal(AMOUNT)
+      expect(sale.raised).to.equal(COST)
+      expect(sale.isOpen).to.equal(true)
   })
 
   

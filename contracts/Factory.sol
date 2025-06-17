@@ -34,6 +34,15 @@ contract Factory {
         return tokenToSale[tokens[_index]];
     }
 
+        function getCost(uint256 _sold) public pure returns (uint256) {
+        uint256 floor = 0.0001 ether;
+        uint256 step = 0.0001 ether;
+        uint256 increment = 10000 ether;
+
+        uint256 cost = (step * (_sold / increment)) + floor;
+        return cost;
+    }
+
     function create(
         string memory _name,
         string memory _symbol
@@ -68,7 +77,7 @@ contract Factory {
 
         uint256 price = cost * (_amount / 10 ** 18);
         // require(msg.value >= price, "Not enough ether sent");
-        // require(Token(_token).balanceOf(address(this)) >= _amount, "Not enough tokens in sale");
+    require(msg.value >= price, "Factory: Not enough ether sent");
 
         sale.sold = sale.sold + _amount;
         sale.raised = sale.raised + price;

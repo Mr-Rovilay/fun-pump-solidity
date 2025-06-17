@@ -101,12 +101,23 @@ describe("Factory", function () {
 
      it("Should update token sale", async function (){
       const {factory, token} = await loadFixture(buyTokenFixture)
-      const sale = await factory.tokenSToSale(await token.getAddress())
+      const sale = await factory.tokenToSale(await token.getAddress())
 
       expect(sale.token).to.equal(await token.getAddress())
       expect(sale.sold).to.equal(AMOUNT)
       expect(sale.raised).to.equal(COST)
       expect(sale.isOpen).to.equal(true)
+     })
+
+         it("Should increase base sale", async function (){
+      const {factory, token} = await loadFixture(buyTokenFixture)
+      const sale = await factory.tokenToSale(await token.getAddress())
+      const cost = await factory.getCost(sale.sold)
+
+ expect(cost).to.be.equal(ethers.parseUnits("0.0002"))
+
+      
+     })
   })
 
   

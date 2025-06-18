@@ -4,6 +4,9 @@ pragma solidity 0.8.27;
 import {Token} from "./Token.sol";
 
 contract Factory {
+    uint256 public constant TARGET = 3 ether;
+    uint256 public constant TOKEN_LIMIT = 500_000 ether;
+
     uint256 public immutable fee;
     address public owner;
     uint256 public totalTokens;
@@ -34,7 +37,7 @@ contract Factory {
         return tokenToSale[tokens[_index]];
     }
 
-        function getCost(uint256 _sold) public pure returns (uint256) {
+    function getCost(uint256 _sold) public pure returns (uint256) {
         uint256 floor = 0.0001 ether;
         uint256 step = 0.0001 ether;
         uint256 increment = 10000 ether;
@@ -47,7 +50,7 @@ contract Factory {
         string memory _name,
         string memory _symbol
     ) external payable {
-        require(msg.value >= fee);        //Create a new token
+        require(msg.value >= fee); //Create a new token
         Token token = new Token(msg.sender, _name, _symbol, 1_000_000 ether);
 
         tokens.push(address(token));
@@ -69,27 +72,55 @@ contract Factory {
     }
 
     function buy(address _token, uint256 _amount) external payable {
-
         TokenSale storage sale = tokenToSale[_token];
+
+        require(sale.isOpen == true, "Factory: Buying closed");
+        require(_amount >= 1 ether, "Factory: Amount too low");
+        require(_amount <= 10000 ether, "Factory: Amount exceeded");
 
         uint256 cost = getCost(sale.sold);
         // require(sale.isOpen, "Sale is not open");
 
         uint256 price = cost * (_amount / 10 ** 18);
         // require(msg.value >= price, "Not enough ether sent");
-    require(msg.value >= price, "Factory: Not enough ether sent");
+        require(msg.value >= price, "Factory: Not enough ether sent");
 
         sale.sold = sale.sold + _amount;
         sale.raised = sale.raised + price;
-        // if (msg.value > price) {
-        //     payable(msg.sender).transfer(msg.value - price); // Refund excess ether
-        // }
-        // if (sale.sold >= 1_000_000 ether) {
-        //     sale.isOpen = false; // Close the sale if all tokens are sold
-        // }
+
+           // If we have reached our ETH goal OR buy limit, stop allowing buys.
+        if (sale.sold >= TOKEN_LIMIT || sale.raised >= TARGET) {
+            sale.isOpen = false;
+        }
         // Transfer the fee to the owner
         Token(_token).transfer(msg.sender, _amount);
 
         emit Buy(_token, _amount);
+    }
+
+       function deposit(address _token) external {
+        // The remaining token balance and the ETH raised
+        // would go into a liquidity pool like Uniswap V3.
+        // For simplicity we'll just transfer remaining
+        // tokens and ETH raised to the creator.
+
+        Token token = Token(_token);
+        TokenSale memory sale = tokenToSale[_token];
+
+        require(sale.isOpen == false, "Factory: Target not reached");
+
+        // Transfer tokens
+        token.transfer(sale.creator, token.balanceOf(address(this)));
+
+        // Transfer ETH raised
+        (bool success, ) = payable(sale.creator).call{value: sale.raised}("");
+        require(success, "Factory: ETH transfer failed");
+    }
+
+    function withdraw(uint256 _amount) external {
+        require(msg.sender == owner, "Factory: Not owner");
+
+        (bool success, ) = payable(owner).call{value: _amount}("");
+        require(success, "Factory: ETH transfer failed");
     }
 }
